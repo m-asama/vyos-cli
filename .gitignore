@@ -1,0 +1,9 @@
+/debian/files
+/debian/tmp
+/debian/vyos-cli
+/debian/*.log
+/debian/*.substvars
+/debian/*.debhelper
+/debian/stamp-*
+/debian/changelog.*
+/debian/debhelper-build-stamp

@@ -1,0 +1,348 @@
+#!/bin/bash
+
+set -e
+
+prefix=/opt/vyatta
+exec_prefix=${prefix}
+sysconfdir=${prefix}/etc
+bindir=${exec_prefix}/bin
+sbindir=${exec_prefix}/sbin
+
+if [ ${EUID:-${UID}} != 0 ]; then
+	echo "need exec as root."
+	exit 1
+fi
+
+bkdate=$(date +%Y%m%d%H%M%S)
+bkorig=vyos-cli-orig
+
+##
+## vyos-cli
+##
+
+if [ -f /etc/fuse.conf ]; then
+	if [ ! -f /etc/fuse.conf.${bkorig} ]; then
+		cp -p /etc/fuse.conf /etc/fuse.conf.${bkorig}
+	fi
+	if ! grep -q "^user_allow_other" /etc/fuse.conf; then
+		cp -p /etc/fuse.conf /etc/fuse.conf.${bkdate}
+		echo user_allow_other >> /etc/fuse.conf
+	fi
+fi
+
+services="
+	snmpd
+	openhpid
+	logd
+	ipvsadm
+	dnsmasq
+	ddclient
+	radvd
+	hostapd
+	conntrackd
+	ufw
+	openswan
+	ipsec
+	setkey
+	strongswan-starter
+	apparmor
+	openvpn
+	xl2tpd
+	pptpd
+	corosync
+	heartbeat
+	pacemaker
+	squid
+	wpa_supplicant
+"
+for service in ${services}
+do
+	if [ -f /etc/systemd/system/multi-user.target.wants/${service}.service ]; then
+		systemctl stop ${service}.service
+		systemctl disable ${service}.service
+	fi
+done
+
+##
+## vyatta-bash
+##
+
+echo dash dash/sh boolean false | debconf-set-selections
+dpkg-reconfigure -fnoninteractive dash
+
+if [ -f /etc/profile.d/bash_completion.sh ]; then
+	mv -f /etc/profile.d/bash_completion.sh /etc/profile.d/bash_completion.sh.${bkorig}
+fi
+
+##
+## vyatta-cfg
+##
+
+for conf in dhcp/dhclient.conf
+do
+	if [ ! -f /etc/${conf}.${bkorig} ]; then
+		mv /etc/${conf} /etc/${conf}.${bkorig}
+		touch /etc/${conf}
+	fi
+done
+
+##
+## vyatta-cfg-system
+##
+
+capability_conf="/etc/security/capability.conf"
+if [ ! -f ${capability_conf}.${bkorig} ]; then
+	cp -p ${capability_conf} ${capability_conf}.${bkorig}
+	perl -p -i -e 's,^(none\s+\*),#$1,' ${capability_conf}
+fi
+caps_vyattaop="cap_net_admin,cap_sys_boot,cap_audit_write"
+caps_vyattacfg="cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read"
+cp -p ${capability_conf} ${capability_conf}.${bkdate}
+perl -p -i -e 's,^(.*\@vyattaop\n),,' ${capability_conf}
+perl -p -i -e 's,^(.*\@vyattacfg\n),,' ${capability_conf}
+perl -p -i -e 's,^(none\s+\*\n),,' ${capability_conf}
+echo ${caps_vyattaop} @vyattaop >> ${capability_conf}
+echo ${caps_vyattacfg} @vyattacfg >> ${capability_conf}
+echo none '*' >> ${capability_conf}
+sed -r -e '/^#/d' -e '/^[[:blank:]]*$/d' < ${sysconfdir}/filecaps | \
+while read capability path; do
+	touch -c ${path}
+	setcap ${capability} ${path}
+done
+
+# create /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+# this should be after 'mkdir -p /opt/vyatta/etc/config/scripts' above
+if [ ! -x /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script ]; then
+	touch /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+	chmod 755 /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+	cat <<EOF >>/opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+#!/bin/sh
+# This script is called from /etc/rc.local on boot after the Vyatta
+# configuration is fully applied. Any modifications done to work around
+# unfixed bugs and implement enhancements which are not complete in the Vyatta
+# system can be placed here.
+EOF
+fi
+
+# call vyatta-postconfig-bootup.script from /etc/rc.local
+if [ ! -f /etc/rc.local ]; then
+	cat <<EOF >>/etc/rc.local
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+exit 0
+EOF
+	chmod 755 /etc/rc.local
+fi
+if ! grep -q /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script /etc/rc.local; then
+	cat <<EOF >>/etc/rc.local
+# Do not remove the following call to vyatta-postconfig-bootup.script.
+# Any boot time workarounds should be put in script below so that they
+# get preserved for the new image during image upgrade.
+POSTCONFIG=/opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+[ -x \$POSTCONFIG ] && \$POSTCONFIG
+EOF
+	sh -c "sed -i -e '/exit 0/d' /etc/rc.local"
+	cat <<EOF >>/etc/rc.local
+
+exit 0
+EOF
+fi
+
+if [ ! -f /etc/systemd/system/rc-local.service ]; then
+	cat <<EOF >>/etc/systemd/system/rc-local.service
+[Unit]
+Description=/etc/rc.local
+
+[Service]
+ExecStart=/etc/rc.local
+Restart=always
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+EOF
+	systemctl enable rc-local.service
+fi
+
+if [ ! -f /etc/sudoers.d/vyatta ]; then
+	cp ${sysconfdir}/sudoers /etc/sudoers.d/vyatta
+	chmod 0440 /etc/sudoers.d/vyatta
+fi
+#if [ ! -f /etc/sudoers.${bkorig} ]; then
+#	cp -p /etc/sudoers /etc/sudoers.${bkorig}
+#fi
+#if ! grep -q ^includedir /etc/sudoers; then
+#	echo includedir /etc/sudoers.d >> /etc/sudoers
+#fi
+
+if [ ! -f /etc/sysctl.d/30-vyatta-router.conf ]; then
+	cp ${sysconfdir}/vyatta-sysctl.conf /etc/sysctl.d/30-vyatta-router.conf
+fi
+
+if [ ! -f /usr/share/bash-completion/bash_completion.${bkorig} ]; then
+	cp -p /usr/share/bash-completion/bash_completion /usr/share/bash-completion/bash_completion.${bkorig}
+fi
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+	if grep -q ^set /usr/share/bash-completion/bash_completion; then
+		sed -i.${bkdate} 's/^set /builtin set /' /usr/share/bash-completion/bash_completion
+	fi
+fi
+
+if [ -f /etc/ppp/ip-up.d/ddclient ]; then
+	rm -f /etc/ppp/ip-up.d/ddclient
+fi
+
+##
+## vyatta-cfg-quagga
+##
+
+sed -i.${bkdate} '
+	s/^ripd=no/ripd=yes/;
+	s/^ripngd=no/ripngd=yes/;
+	s/^ospfd=no/ospfd=yes/;
+	s/^ospf6d=no/ospf6d=yes/;
+	s/^isisd=no/isisd=yes/;
+	s/^bgpd=no/bgpd=yes/;
+' /etc/frr/daemons
+for daemon in zebra vtysh ripd ripngd ospfd ospf6d isisd bgpd; do
+	if [ ! -e /etc/frr/${daemon}.conf ]; then
+		touch /etc/frr/${daemon}.conf
+		chmod 0640 /etc/frr/${daemon}.conf
+	fi
+done
+chown -R frr:frrvty /etc/frr
+if [ ! -d /opt/vyatta/sbin/policy ]; then
+	mkdir -p /opt/vyatta/sbin/policy
+fi
+if [ -f /usr/bin/vtysh ] && [ ! -f /opt/vyatta/sbin/policy/vtysh ]; then
+	ln -s /usr/bin/vtysh /opt/vyatta/sbin/policy/vtysh
+fi
+# Create a directory for autosaved quagga configs
+AUTOSAVE_DIR=/opt/vyatta/etc/quagga
+if [ ! -d ${AUTOSAVE_DIR} ]; then
+	mkdir -p ${AUTOSAVE_DIR}
+	chown root:vyattacfg ${AUTOSAVE_DIR}
+	chmod 770 ${AUTOSAVE_DIR}
+fi
+
+##
+## vyatta-cfg-vpn
+##
+
+#rm -f /etc/ipsec.secrets
+#touch /etc/ipsec.secrets
+chown root:root /etc/ipsec.secrets
+chmod 600 /etc/ipsec.secrets
+
+if [ -f /etc/ipsec.d/private/localhost.localdomainKey.pem ]; then
+	rm -f /etc/ipsec.d/private/localhost.localdomainKey.pem
+fi
+if [ -f /etc/ipsec.d/certs/localhost.localdomainCert.pem ]; then
+	rm -f /etc/ipsec.d/certs/localhost.localdomainCert.pem
+fi
+
+if [ ! -f /etc/strongswan.d/vyos-cli.conf ]; then
+	cat <<EOF >>/etc/strongswan.d/vyos-cli.conf
+charon {
+	install_routes = no
+}
+EOF
+fi
+
+##
+## vyatta-ravpn
+##
+
+if [ -f /etc/init.d/xl2tpd ]; then
+	if [ ! -f /etc/init.d/xl2tpd.${bkorig} ]; then
+		cp -p /etc/init.d/xl2tpd /etc/init.d/xl2tpd.${bkorig}
+	fi
+	if ! grep -q 'start-stop-daemon --start --oknodo' /etc/init.d/xl2tpd; then
+		sed '1,/start-stop-daemon/s/start-stop-daemon --start/start-stop-daemon --start --oknodo/' \
+			-i.${bkdate} /etc/init.d/xl2tpd
+	fi
+fi
+
+ravpncfgs="
+	/etc/ipsec.d/tunnels/remote-access
+	/etc/radcli/radiusclient-pptp.conf
+	/etc/radcli/servers-pptp
+	/etc/radcli/radiusclient-l2tp.conf
+	/etc/radcli/servers-l2tp
+	/etc/radcli/port-id-map-ravpn
+	/etc/ppp/secrets/chap-ravpn
+	/etc/ppp/options.xl2tpd
+	/etc/ppp/options.pptpd
+"
+for cfg in ${ravpncfgs}; do
+	mkdir -p ${cfg%/*}
+	touch ${cfg}
+done
+
+# fix Xl2tpd init script that doesn't create its startup directory
+#xl2tpd_init=/etc/init.d/xl2tpd
+#if [ -f $xl2tpd_init ] && ! grep -q 'mkdir -p /var/run/xl2tpd' $xl2tpd_init; then
+#	sed -i -e '/test -x $DAEMON || exit 0/a mkdir -p /var/run/xl2tpd' $xl2tpd_init
+#fi
+
+chmod 600 /etc/ppp/secrets/chap-ravpn
+
+cp -f ${sysconfdir}/ravpn/radius-dictionary.microsoft /etc/radcli/dictionary.microsoft
+cp -f /etc/radcli/dictionary /etc/radcli/dictionary-ravpn
+echo 'INCLUDE /etc/radcli/dictionary.merit' >> /etc/radcli/dictionary-ravpn
+echo 'INCLUDE /etc/radcli/dictionary.microsoft' >> /etc/radcli/dictionary-ravpn
+
+mkdir -p ${sysconfdir}/ravpn/sessions
+
+for s in up down; do
+	cp -f ${sysconfdir}/ravpn/ppp-ip-$s /etc/ppp/ip-$s.d/ravpn-ip-$s
+done
+
+##
+## vyatta-webproxy
+##
+
+urlfilterdatadir=/opt/vyatta/etc/config/url-filtering
+
+# save a copy of default config files
+if [ ! -f /etc/squid/squid.conf.${bkorig} ]; then
+	cp -p /etc/squid/squid.conf /etc/squid/squid.conf.${bkorig}
+fi
+if [ ! -f /etc/squidguard/squidGuard.conf.${bkorig} ]; then
+	cp -p /etc/squidguard/squidGuard.conf /etc/squidguard/squidGuard.conf.${bkorig}
+fi
+sed -i 's/nocreate/create 640 proxy adm/' /etc/logrotate.d/squid
+sed -i 's/delaycompress//' /etc/logrotate.d/squid
+sed -i 's/compress//' /etc/logrotate.d/squid
+#sed -i 's/etc\/init.d\/squid/etc\/init.d\/squid3/' /usr/sbin/update-squidguard
+sed -i 's/reload/restart/' /usr/sbin/update-squidguard
+chown proxy:adm /var/log/squid
+
+# create local conf placeholder
+touch /etc/squid/local.conf
+
+# mv databases to global data directory
+if [ ! -d $urlfilterdatadir ]; then
+	mkdir -p $urlfilterdatadir
+fi
+if [ -d /var/lib/squidguard ]; then
+	mv /var/lib/squidguard $urlfilterdatadir
+fi
+if [ -d /var/lib/sitefilter ]; then
+	mv /var/lib/sitefilter $urlfilterdatadir
+fi
+
+echo done
+
+exit 0

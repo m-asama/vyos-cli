@@ -1,0 +1,46 @@
+Source: vyos-cli
+Section: contrib/net
+Priority: optional
+Maintainer: Masakazu Asama <m-asama@ginzado.co.jp>
+Build-Depends: debhelper-compat (= 12)
+Standards-Version: 4.4.1
+#Homepage: <insert the upstream URL, if relevant>
+#Vcs-Browser: https://salsa.debian.org/debian/vyos-cli
+#Vcs-Git: https://salsa.debian.org/debian/vyos-cli.git
+
+Package: vyos-cli
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ libvyatta-cfg1,
+ libvyatta-util1,
+ vyatta-bash,
+ vyatta-biosdevname,
+ vyatta-cfg-firewall,
+ vyatta-cfg-op-pppoe,
+ vyatta-cfg-qos,
+ vyatta-cfg-quagga,
+ vyatta-cfg-system,
+ vyatta-cfg-vpn,
+ vyatta-cfg,
+ vyatta-cluster,
+ vyatta-conntrack,
+ vyatta-cron,
+ vyatta-ipv6-rtradv,
+ vyatta-nat,
+ vyatta-op-firewall,
+ vyatta-op-qos,
+ vyatta-op-quagga,
+ vyatta-op-vpn,
+ vyatta-op,
+ vyatta-openvpn,
+ vyatta-ravpn,
+ vyatta-util,
+ vyatta-vrrp,
+ vyatta-webproxy,
+ vyatta-wireless,
+ vyatta-wirelessmodem,
+ vyatta-zone,
+ vyos-nhrp,
+ vyos-opennhrp
+Description: VyOS CLI main package
+ This package provides the VyOS CLI main package.

@@ -1,0 +1,5 @@
+vyos-cli (0.1.0-1+helium0+focal0+rev20200425222826) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Masakazu Asama <m-asama@ginzado.co.jp>  Fri, 14 Feb 2020 16:48:06 +0900

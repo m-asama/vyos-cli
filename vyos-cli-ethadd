@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]
+then
+	echo "Usage: $0 MACADDR ETHNAME"
+	exit
+fi
+
+MACADDR=$1
+ETHNAME=$2
+
+echo "$MACADDR" | \
+	egrep -i '^[0-9a-f][0-9a-f](:[0-9a-f][0-9a-f]){5}$' > /dev/null
+if [ $? -ne 0 ]
+then
+	echo "MACADDR $MACADDR invalid"
+	exit
+fi
+
+echo "$ETHNAME" | egrep '^eth([0-9]+)$' > /dev/null
+if [ $? -ne 0 ]
+then
+	echo "ETHNAME $ETHNAME invalid"
+	exit
+fi
+
+UDFNAME=`echo /etc/udev/rules.d/vyos-eth-$MACADDR.rules | sed -e s,:,,g`
+if [ -f $UDFNAME ]
+then
+	echo "MACADDR $MACADDR already exists"
+	exit
+fi
+
+grep -w $ETHNAME /etc/udev/rules.d/vyos-eth-*.rules /dev/null > /dev/null 2>&1
+if [ $? -eq 0 ]
+then
+	echo "ETHNAME $ETHNAME already exists"
+	exit
+fi
+
+echo "SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\"," \
+	"ATTR{address}==\"$MACADDR\", ATTR{type}==\"1\", KERNEL==\"*\"," \
+	"NAME=\"$ETHNAME\"" > $UDFNAME
