@@ -21,16 +21,16 @@ VyOS 1.1.x の CLI を全て移植するのは時間的に厳しいため、
 
 + 最小構成 + SSH サーバで Ubuntu 20.04 LTS をインストールする
 + root で以下のコマンドを実行
-++ echo deb http://www.ginzado.ne.jp/~m-asama/vyos-cli helium-focal main > /etc/apt/sources.list.d/vyos-cli.list
-++ curl http://www.ginzado.ne.jp/~m-asama/vyos-cli/vyos-cli.gpg.key | apt-key add -
-++ apt-get update
-++ apt-get install vyos-cli
-++ vyos-cli-setup
-++ vyos-cli-ethadd 52:54:00:54:00:ad eth1
-++ vyos-cli-ethadd 52:54:00:54:00:be eth2
-++ vyos-cli-useradd vyos
-++ passwd vyos
-++ reboot
+  + echo deb http://www.ginzado.ne.jp/~m-asama/vyos-cli helium-focal main > /etc/apt/sources.list.d/vyos-cli.list
+  + curl http://www.ginzado.ne.jp/~m-asama/vyos-cli/vyos-cli.gpg.key | apt-key add -
+  + apt-get update
+  + apt-get install vyos-cli
+  + vyos-cli-setup
+  + vyos-cli-ethadd 52:54:00:54:00:ad eth1
+  + vyos-cli-ethadd 52:54:00:54:00:be eth2
+  + vyos-cli-useradd vyos
+  + passwd vyos
+  + reboot
 
 `vyos-cli-setup` は VyOS CLI を使うためのセットアップスクリプトです。
 VyOS CLI で制御するデーモン群の無効化や VyOS CLI を動かすユーザのための権限の設定などを行います。
@@ -118,8 +118,8 @@ VyOS CLI のリポジトリは以下の通りです。
 ## 既知の問題
 
 - VyOS CLI 以外のコマンド補完がうまくいかない
--- たぶんとりあえずエラーにならないように修正したこの辺が原因なんだと思いますが、どなたか bash-completion に詳しい方なおす方法をご存知でしたら教えていただけると助かります。
--- https://github.com/m-asama/vyatta-cfg/commit/7973c3db10853246e9a0d3f024b62e3e180f9d18#diff-35c0eab855ac848e067f6b5a38a37391R137
--- https://github.com/m-asama/vyatta-op/commit/dd4845d638242b456d60dbbfdf88264ff2f19eb2#diff-f2deeec45c525d994f94dc541e1af42cR112
+  - たぶんとりあえずエラーにならないように修正したこの辺が原因なんだと思いますが、どなたか bash-completion に詳しい方なおす方法をご存知でしたら教えていただけると助かります。
+  - https://github.com/m-asama/vyatta-cfg/commit/7973c3db10853246e9a0d3f024b62e3e180f9d18#diff-35c0eab855ac848e067f6b5a38a37391R137
+  - https://github.com/m-asama/vyatta-op/commit/dd4845d638242b456d60dbbfdf88264ff2f19eb2#diff-f2deeec45c525d994f94dc541e1af42cR112
 - ddclient が何かおかしなことを言ってくる
 - resolv.conf が systemd で管理されてるためか DNS 名前解決が怪しい
