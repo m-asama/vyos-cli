@@ -54,6 +54,10 @@ services="
 	pacemaker
 	squid
 	wpa_supplicant
+	isc-dhcp-relay
+	isc-dhcp-relay6
+	isc-dhcp-server
+	isc-dhcp-server6
 "
 for service in ${services}
 do
