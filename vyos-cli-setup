@@ -65,6 +65,10 @@ do
 		systemctl stop ${service}.service
 		systemctl disable ${service}.service
 	fi
+	if [ -f /etc/rc3.d/S*${service} ]; then
+		systemctl stop ${service}.service
+		systemctl disable ${service}.service
+	fi
 done
 
 ##
