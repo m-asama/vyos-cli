@@ -211,6 +211,24 @@ if [ -f /etc/ppp/ip-up.d/ddclient ]; then
 	rm -f /etc/ppp/ip-up.d/ddclient
 fi
 
+if [ ! -f /etc/ssh/sshd_config.${bkorig} ]; then
+	cp -p /etc/ssh/sshd_config /etc/ssh/sshd_config.${bkorig}
+fi
+if ! grep -q "^# VyOS CLI" /etc/ssh/sshd_config; then
+	sed -i.${bkdate} '
+		s/^PermitRootLogin/#&/;
+		s/^PasswordAuthentication/#&/;
+		s/^UseDNS/#&/;
+	' /etc/ssh/sshd_config
+	cat <<EOF >>/etc/ssh/sshd_config
+
+# VyOS CLI
+PermitRootLogin no
+PasswordAuthentication yes
+UseDNS yes
+EOF
+fi
+
 ##
 ## vyatta-cfg-quagga
 ##
