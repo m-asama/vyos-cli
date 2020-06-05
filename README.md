@@ -73,6 +73,7 @@ VyOS CLI のリポジトリは以下の通りです。
 - https://github.com/m-asama/vyatta-cfg-system
 - https://github.com/m-asama/vyatta-cfg-vpn
 - https://github.com/m-asama/vyatta-cluster
+- https://github.com/m-asama/vyatta-config-mgmt
 - https://github.com/m-asama/vyatta-config-migrate
 - https://github.com/m-asama/vyatta-conntrack
 - https://github.com/m-asama/vyatta-cron
