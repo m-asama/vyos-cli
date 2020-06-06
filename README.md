@@ -19,6 +19,8 @@ VyOS 1.1.x の CLI を全て移植するのは時間的に厳しいため、
 
 ## 使い方
 
+AWS で試してみたいという方は [こちら](README.aws.md) を参照してください。
+
 + 最小構成 + SSH サーバで Ubuntu 20.04 LTS をインストールする
 + root で以下のコマンドを実行
   + echo deb http://www.ginzado.ne.jp/~m-asama/vyos-cli helium-focal main > /etc/apt/sources.list.d/vyos-cli.list
