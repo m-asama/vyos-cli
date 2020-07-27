@@ -19,6 +19,8 @@ VyOS 1.1.x の CLI を全て移植するのは時間的に厳しいため、
 
 ## 使い方
 
+Raspberry Pi で試してみたいという方は [こちら](README.raspi.md) を参照してください。
+
 AWS で試してみたいという方は [こちら](README.aws.md) を参照してください。
 
 + 最小構成 + SSH サーバで Ubuntu 20.04 LTS をインストールする
@@ -27,6 +29,7 @@ AWS で試してみたいという方は [こちら](README.aws.md) を参照し
   + curl http://www.ginzado.ne.jp/~m-asama/vyos-cli/vyos-cli.gpg.key | apt-key add -
   + apt-get update
   + apt-get install vyos-cli
+    + いくつかのパッケージで設定を確認されますが適当に OK で進んで大丈夫です
   + vyos-cli-setup
   + vyos-cli-ethadd 52:54:00:54:00:ad eth1
   + vyos-cli-ethadd 52:54:00:54:00:be eth2
@@ -68,6 +71,8 @@ VyOS CLI のリポジトリは以下の通りです。
 - https://github.com/m-asama/vyatta-bash
 - https://github.com/m-asama/vyatta-biosdevname
 - https://github.com/m-asama/vyatta-cfg
+- https://github.com/m-asama/vyatta-cfg-dhcp-relay
+- https://github.com/m-asama/vyatta-cfg-dhcp-server
 - https://github.com/m-asama/vyatta-cfg-firewall
 - https://github.com/m-asama/vyatta-cfg-op-pppoe
 - https://github.com/m-asama/vyatta-cfg-qos
@@ -82,6 +87,7 @@ VyOS CLI のリポジトリは以下の通りです。
 - https://github.com/m-asama/vyatta-ipv6-rtradv
 - https://github.com/m-asama/vyatta-nat
 - https://github.com/m-asama/vyatta-op
+- https://github.com/m-asama/vyatta-op-dhcp-server
 - https://github.com/m-asama/vyatta-op-firewall
 - https://github.com/m-asama/vyatta-op-qos
 - https://github.com/m-asama/vyatta-op-quagga
@@ -107,8 +113,9 @@ VyOS CLI のリポジトリは以下の通りです。
 
 ## 何かあったら
 
-私の Twitter アカウント(m_asama)にメンションを飛ばしてください。
-てかこのリポジトリになんかコメントとか書けるんでしたっけ？？
+もし何か不具合等ありましたら [ここ](https://github.com/m-asama/vyos-cli/issues) にイシューを立ててください。
+
+それか [私の Twitter アカウント](https://twitter.com/m_asama)にメンションを飛ばしてください。
 
 余裕があったら対応するかもです。
 
@@ -124,5 +131,3 @@ VyOS CLI のリポジトリは以下の通りです。
   - たぶんとりあえずエラーにならないように修正したこの辺が原因なんだと思いますが、どなたか bash-completion に詳しい方なおす方法をご存知でしたら教えていただけると助かります。
   - https://github.com/m-asama/vyatta-cfg/commit/7973c3db10853246e9a0d3f024b62e3e180f9d18#diff-35c0eab855ac848e067f6b5a38a37391R137
   - https://github.com/m-asama/vyatta-op/commit/dd4845d638242b456d60dbbfdf88264ff2f19eb2#diff-f2deeec45c525d994f94dc541e1af42cR112
-- ddclient が何かおかしなことを言ってくる
-- resolv.conf が systemd で管理されてるためか DNS 名前解決が怪しい

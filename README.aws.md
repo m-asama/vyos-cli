@@ -16,6 +16,7 @@ cloud-init でリモートアクセスできるようにセットアップが行
   + curl http://www.ginzado.ne.jp/~m-asama/vyos-cli/vyos-cli.gpg.key | apt-key add -
   + apt-get update
   + apt-get install vyos-cli
+    + いくつかのパッケージで設定を確認されますが適当に OK で進んで大丈夫です
   + vyos-cli-setup
     + ここまでは通常の方法と一緒ですが vyos-cli-ethadd は実行しません
   + vyos-cli-useradd vyos
