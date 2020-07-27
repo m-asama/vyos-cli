@@ -115,7 +115,7 @@ VyOS CLI のリポジトリは以下の通りです。
 
 もし何か不具合等ありましたら [ここ](https://github.com/m-asama/vyos-cli/issues) にイシューを立ててください。
 
-それか [私の Twitter アカウント](https://twitter.com/m_asama)にメンションを飛ばしてください。
+それか [私の Twitter アカウント](https://twitter.com/m_asama) にメンションを飛ばしてください。
 
 余裕があったら対応するかもです。
 
