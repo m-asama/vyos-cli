@@ -6,4 +6,4 @@ then
 	exit
 fi
 
-useradd -m -s /bin/vbash -G sudo,frrvty,vyattacfg "$1"
+useradd -m -s /bin/vbash -G sudo,frrvty,vyattacfg,dip "$1"
