@@ -1,4 +1,4 @@
-vyos-cli (0.1.0-1+helium0+focal0+rev20200801102658) unstable; urgency=low
+vyos-cli (0.1.0-1+helium0+focal0+rev20200805104646) unstable; urgency=low
 
   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
 
