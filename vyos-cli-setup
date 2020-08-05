@@ -133,8 +133,8 @@ EOF
 fi
 
 # call vyatta-postconfig-bootup.script from /etc/rc.local
-if [ ! -f /etc/rc.local ]; then
-	cat <<EOF >>/etc/rc.local
+#if [ ! -f /etc/rc.local ]; then
+#	cat <<EOF >>/etc/rc.local
 #!/bin/sh -e
 #
 # rc.local
@@ -147,40 +147,50 @@ if [ ! -f /etc/rc.local ]; then
 # bits.
 #
 # By default this script does nothing.
-
-exit 0
-EOF
-	chmod 755 /etc/rc.local
-fi
-if ! grep -q /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script /etc/rc.local; then
-	cat <<EOF >>/etc/rc.local
+#
+#exit 0
+#EOF
+#	chmod 755 /etc/rc.local
+#fi
+#if ! grep -q /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script /etc/rc.local; then
+#	cat <<EOF >>/etc/rc.local
 # Do not remove the following call to vyatta-postconfig-bootup.script.
 # Any boot time workarounds should be put in script below so that they
 # get preserved for the new image during image upgrade.
-POSTCONFIG=/opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
-[ -x \$POSTCONFIG ] && \$POSTCONFIG
-EOF
-	sh -c "sed -i -e '/exit 0/d' /etc/rc.local"
-	cat <<EOF >>/etc/rc.local
-
-exit 0
-EOF
+#POSTCONFIG=/opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script
+#[ -x \$POSTCONFIG ] && \$POSTCONFIG
+#EOF
+#	sh -c "sed -i -e '/exit 0/d' /etc/rc.local"
+#	cat <<EOF >>/etc/rc.local
+#
+#exit 0
+#EOF
+#fi
+#
+#if [ ! -f /etc/systemd/system/rc-local.service ]; then
+#	cat <<EOF >>/etc/systemd/system/rc-local.service
+#[Unit]
+#Description=/etc/rc.local
+#
+#[Service]
+#ExecStart=/etc/rc.local
+#Restart=always
+#Type=simple
+#
+#[Install]
+#WantedBy=multi-user.target
+#EOF
+#	systemctl enable rc-local.service
+#fi
+if [ -f /etc/systemd/system/rc-local.service ] && egrep -q '^Restart=always' /etc/systemd/system/rc-local.service; then
+	perl -p -i -e 's,^Restart=always,Restart=no,' /etc/systemd/system/rc-local.service
 fi
-
-if [ ! -f /etc/systemd/system/rc-local.service ]; then
-	cat <<EOF >>/etc/systemd/system/rc-local.service
-[Unit]
-Description=/etc/rc.local
-
-[Service]
-ExecStart=/etc/rc.local
-Restart=always
-Type=simple
-
-[Install]
-WantedBy=multi-user.target
-EOF
-	systemctl enable rc-local.service
+if grep -q /opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script /etc/rc.local; then
+	perl -p -i -e 's,^# Do not remove the following call to vyatta-postconfig-bootup.script..*\n,,' /etc/rc.local
+	perl -p -i -e 's,^# Any boot time workarounds should be put in script below so that they.*\n,,' /etc/rc.local
+	perl -p -i -e 's,^# get preserved for the new image during image upgrade..*\n,,' /etc/rc.local
+	perl -p -i -e 's,^POSTCONFIG=/opt/vyatta/etc/config/scripts/vyatta-postconfig-bootup.script.*\n,,' /etc/rc.local
+	perl -p -i -e 's,^\[ -x \$POSTCONFIG ] && \$POSTCONFIG.*\n,,' /etc/rc.local
 fi
 
 if [ ! -f /etc/sudoers.d/vyatta ]; then
